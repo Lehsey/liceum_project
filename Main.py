@@ -22,8 +22,8 @@ def terminate():
     sys.exit()
 
 
-def load_image(name, collorkey=None, transform=None):
-    fullname = os.path.join('data\\for test', name)
+def load_image(name, collorkey=None):
+    fullname = os.path.join('data\\sprites', name)
     image = pygame.image.load(fullname).convert()
     if collorkey:
         if collorkey == -1:
@@ -31,11 +31,6 @@ def load_image(name, collorkey=None, transform=None):
         image.set_colorkey(collorkey)
     else:
         image = image.convert_alpha()
-
-    if transform:
-        if transform == 'p':
-            image = pygame.transform.scale(image, (image.get_width(
-            ) + tile_width // 2, image.get_height() + tile_height // 2))
     return image
 
 # группы
@@ -45,8 +40,10 @@ all_sprite = pygame.sprite.Group()
 all_sprite_without_player = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
-tile_images = {'grass': load_image('jungle_test.png'), 'dirt': load_image('jungle_dirt.png')}
-player_image = load_image('knight_test_l.png', transform='p')
+tile_images = {'grass': load_image(
+    'jungle_test.png'), 'dirt': load_image('jungle_dirt.png')}
+player_images = {'run_r': load_image('player_run_r.png')}
+player_image = load_image('knight_test_l.png')
 
 # классы
 
@@ -55,14 +52,33 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprite)
         self.image = player_image
-        self.mask = pygame.mask.from_surface(self.image)
+        self.cur_sprite = 0
+        self.frames_run = []
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
         self.Right = False
         self.Left = False
         self.Up = False
         self.can_jump = True
+        self.last_direct = RIGHT
         self.speed_x = 150
         self.speed_y = 0
+        self.cut_shet(player_images['run_r'], 8, 1)
+
+    def cut_shet(self, sheet, columns, rows):
+        cur_frames = []
+        self.rect = pygame.Rect(0, 0, sheet.get_width() //
+                                columns, sheet.get_height() // rows)
+        print(self.rect)
+        for j in range(rows):
+            for i in range(columns):
+                frame_loc = (self.rect.w * i, self.rect.h * j)
+                cur_frames.append(sheet.subsurface(
+                    pygame.Rect(frame_loc, self.rect.size)))
+        for i in range(rows * columns):
+            print(cur_frames[i].get_width(), cur_frames[i].get_height())
+            cur_frames[i] = pygame.transform.scale(cur_frames[i], (cur_frames[i].get_width(
+            ) + tile_width, cur_frames[i].get_height() + tile_height))
+        self.frames_run.append(cur_frames)
 
     def direct_on(self, *sides):
 
@@ -88,7 +104,6 @@ class Player(pygame.sprite.Sprite):
                 self.Up = False
 
     def update(self):
-
         if self.Right:
             self.rect = self.rect.move(-(-self.speed_x // FPS), 0)
             if pygame.sprite.groupcollide(player_group, tiles_group, False, False, pygame.sprite.collide_mask):
@@ -98,8 +113,8 @@ class Player(pygame.sprite.Sprite):
             self.rect = self.rect.move(-self.speed_x // FPS, 0)
             if pygame.sprite.groupcollide(player_group, tiles_group, False, False, pygame.sprite.collide_mask):
                 self.rect = self.rect.move(-(-self.speed_x // FPS), 0)
-        
-        if not self.can_jump :
+
+        if not self.can_jump:
             self.Up = False
 
         if self.Up and self.can_jump:
@@ -118,7 +133,13 @@ class Player(pygame.sprite.Sprite):
             self.speed_y += GRAVITY
             if self.speed_y > 5:
                 self.speed_y = 5
-            
+
+    def animation(self):
+        self.cur_sprite = (self.cur_sprite + 1) % len(self.frames_run[0])
+        self.image = self.frames_run[0][self.cur_sprite]
+        self.mask = pygame.mask.from_surface(self.image)
+
+        
 
 
 class Tile(pygame.sprite.Sprite):
@@ -133,19 +154,16 @@ class Camera:
     def __init__(self):
         self.dx = 0
         self.dy = 0
-    
+
     def apply(self, obj):
-        #print(obj)
+        # print(obj)
         obj.rect.x += self.dx
         obj.rect.y += self.dy
-        #print(obj.rect)
-        
+        # print(obj.rect)
 
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - width // 2)
         self.dy = -(target.rect.y + target.rect.h // 2 - height // 2)
-
-
 
 
 # второстепенные функции (вспомогательные)
@@ -160,7 +178,7 @@ def load_level(filname):
 
 
 def generate_level(level):
-    new_player, x, y = None, None, None 
+    new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '#':
@@ -171,6 +189,7 @@ def generate_level(level):
             elif level[y][x] == '@':
                 new_player = Player(x, y - 0.1)
     return new_player, x, y
+
 
 FPS = 120
 Clock = pygame.time.Clock()
@@ -203,6 +222,9 @@ while Is_game_on:
                 up_keys.append(RIGHT)
             player.direct_Off(*up_keys)
 
+    if Time_count >= 50:
+        Time_count = 0
+        player.animation()
     player_group.update()
     player_group.draw(Display)
     tiles_group.draw(Display)
