@@ -24,7 +24,7 @@ def terminate():
 
 def load_image(name, collorkey=None):
     fullname = os.path.join('data\\sprites', name)
-    image = pygame.image.load(fullname).convert()
+    image = pygame.image.load(fullname)
     if collorkey:
         if collorkey == -1:
             collorkey = image.get_at((0, 0))
