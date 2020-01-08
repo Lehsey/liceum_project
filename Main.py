@@ -12,7 +12,7 @@ tile_width = tile_height = 50
 UP = 273
 LEFT = 276
 RIGHT = 275
-GRAVITY = 0.2
+GRAVITY = 0.15
 
 # Первостепенные функции
 
@@ -45,7 +45,7 @@ all_sprite = pygame.sprite.Group()
 all_sprite_without_player = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
-tile_images = {'grass': load_image('jungle_test.png')}
+tile_images = {'grass': load_image('jungle_test.png'), 'dirt': load_image('jungle_dirt.png')}
 player_image = load_image('knight_test_l.png', transform='p')
 
 # классы
@@ -60,7 +60,7 @@ class Player(pygame.sprite.Sprite):
         self.Right = False
         self.Left = False
         self.Up = False
-        self.stand = False
+        self.can_jump = True
         self.speed_x = 150
         self.speed_y = 0
 
@@ -98,15 +98,20 @@ class Player(pygame.sprite.Sprite):
             self.rect = self.rect.move(-self.speed_x // FPS, 0)
             if pygame.sprite.groupcollide(player_group, tiles_group, False, False, pygame.sprite.collide_mask):
                 self.rect = self.rect.move(-(-self.speed_x // FPS), 0)
+        
+        if not self.can_jump :
+            self.Up = False
 
-        if self.Up:
+        if self.Up and self.can_jump:
             self.speed_y = -8
             self.Up = False
+            self.can_jump = False
 
         if not self.Up:
             self.rect = self.rect.move(0, self.speed_y)
             if pygame.sprite.groupcollide(player_group, tiles_group, False, False, pygame.sprite.collide_mask):
                 self.rect = self.rect.move(0, -self.speed_y)
+                self.can_jump = True
                 if self.speed_y < 0:
                     self.speed_y = 0
 
@@ -155,15 +160,17 @@ def load_level(filname):
 
 
 def generate_level(level):
-    new_player, x, y = None, None, None
+    new_player, x, y = None, None, None 
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '#':
-                Tile('grass', x, y)
+                if y == 0 or level[y - 1][x] != '#':
+                    Tile('grass', x, y)
+                else:
+                    Tile('dirt', x, y)
             elif level[y][x] == '@':
-                new_player = Player(x, y)
+                new_player = Player(x, y - 0.1)
     return new_player, x, y
-
 
 FPS = 120
 Clock = pygame.time.Clock()
