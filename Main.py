@@ -4,6 +4,7 @@ import sys
 
 pygame.init()
 
+# TODO ПОПРАВИТЬ РАССТОЯНИЯ МЕЖДУ СПРАЙТАМИ / ВЫРЕЗАТЬ ИХ ПО ОТДЕЛЬНОСТИ
 # Первостепенные константы
 
 size = width, height = 800, 600
@@ -44,14 +45,15 @@ player_group = pygame.sprite.Group()
 bakcground_group = pygame.sprite.Group()
 tile_images = {'grass': load_image(
     'jungle_test.png'), 'dirt': load_image('jungle_dirt.png')}
-player_images = {'run_r': load_image('player_run_r.png'), 'run_l': load_image(
-    'player_run_l.png'), 'idle_r': load_image('player_idle_r.png'), 'idle_l': load_image('player_idle_l.png')}
+player_images = {'run_r': load_image('player_run_r.png'), 'run_l': load_image('player_run_l.png'), 'idle_r': load_image(
+    'player_idle_r.png'), 'idle_l': load_image('player_idle_l.png'), 'attack_r': load_image('player_attack_r.png'), 'attack_l': load_image('player_attack_l.png')}
 player_image = load_image('knight_test_l.png')
 
 # классы
 
 
 class Player(pygame.sprite.Sprite):
+
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprite)
         self.cur_sprite = 0
@@ -62,6 +64,8 @@ class Player(pygame.sprite.Sprite):
         self.frame_idle = [self.cut_shet(player_images['idle_r'], 15, 1), self.cut_shet(
             player_images['idle_l'], 15, 1)]
         self.frame_idle[1].reverse()
+        self.frame_attack = [self.cut_shet(player_images['attack_r'], 22, 1), self.cut_shet(player_images['attack_l'], 22, 1)]
+        self.frame_attack[1].reverse()
         self.image = self.frame_idle[0][0]
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
         self.Right = False
@@ -83,8 +87,11 @@ class Player(pygame.sprite.Sprite):
                 cur_frames.append(sheet.subsurface(
                     pygame.Rect(frame_loc, self.rect.size)))
         for i in range(rows * columns):
+            print(cur_frames[i])
             cur_frames[i] = pygame.transform.scale(cur_frames[i], (cur_frames[i].get_width(
             ) + tile_width, cur_frames[i].get_height() + tile_height))
+            print(cur_frames[i])
+        print()
         return cur_frames
 
     def action_on(self, *sides):
@@ -156,12 +163,22 @@ class Player(pygame.sprite.Sprite):
                 self.image = self.frames_run[0][self.cur_sprite]
             elif self.Left:
                 self.image = self.frames_run[1][self.cur_sprite]
+
         else:
             self.cur_sprite = (self.cur_sprite + 1) % len(self.frame_idle[0])
             if self.last_direct == RIGHT:
                 self.image = self.frame_idle[0][self.cur_sprite]
             else:
                 self.image = self.frame_idle[1][self.cur_sprite]
+
+        if self.Attack:
+            self.cur_sprite_attack = (self.cur_sprite_attack + 1) % len(self.frame_attack[0])
+            if self.last_direct == RIGHT:
+                self.image = self.frame_attack[0][self.cur_sprite_attack]
+            if self.last_direct == LEFT:
+                self.image = self.frame_attack[1][self.cur_sprite_attack]
+        else:
+            self.cur_sprite_attack = 0
 
         self.mask = pygame.mask.from_surface(self.image)
 
@@ -203,7 +220,8 @@ def generate_level(level):
     new_player, x, y = None, None, None
     for i in range(5):
         back_sprit = pygame.sprite.Sprite(bakcground_group)
-        back_sprit.image = pygame.transform.scale(load_image(f'plx-{i}.png'), size)
+        back_sprit.image = pygame.transform.scale(
+            load_image(f'plx-{i}.png'), size)
         back_sprit.rect = back_sprit.image.get_rect()
         back_sprit.rect.x = 0
         back_sprit.rect.y = 0
