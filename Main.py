@@ -12,6 +12,7 @@ tile_width = tile_height = 50
 UP = 273
 LEFT = 276
 RIGHT = 275
+ATTACK = pygame.K_a
 GRAVITY = 0.15
 
 # Первостепенные функции
@@ -40,6 +41,7 @@ all_sprite = pygame.sprite.Group()
 all_sprite_without_player = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
+bakcground_group = pygame.sprite.Group()
 tile_images = {'grass': load_image(
     'jungle_test.png'), 'dirt': load_image('jungle_dirt.png')}
 player_images = {'run_r': load_image('player_run_r.png'), 'run_l': load_image(
@@ -53,6 +55,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprite)
         self.cur_sprite = 0
+        self.cur_sprite_attack = 0
         self.frames_run = [self.cut_shet(player_images['run_r'], 8, 1), self.cut_shet(
             player_images['run_l'], 8, 1)]
         self.frames_run[1].reverse()
@@ -65,6 +68,7 @@ class Player(pygame.sprite.Sprite):
         self.Left = False
         self.Up = False
         self.can_jump = True
+        self.Attack = False
         self.last_direct = RIGHT
         self.speed_x = 150
         self.speed_y = 0
@@ -73,7 +77,6 @@ class Player(pygame.sprite.Sprite):
         cur_frames = []
         self.rect = pygame.Rect(0, 0, sheet.get_width() //
                                 columns, sheet.get_height() // rows)
-        print(self.rect)
         for j in range(rows):
             for i in range(columns):
                 frame_loc = (self.rect.w * i, self.rect.h * j)
@@ -84,7 +87,7 @@ class Player(pygame.sprite.Sprite):
             ) + tile_width, cur_frames[i].get_height() + tile_height))
         return cur_frames
 
-    def direct_on(self, *sides):
+    def action_on(self, *sides):
 
         for el in sides:
             if el == LEFT:
@@ -96,7 +99,10 @@ class Player(pygame.sprite.Sprite):
             if el == UP:
                 self.Up = True
 
-    def direct_Off(self, *sides):
+            if el == ATTACK:
+                self.Attack = True
+
+    def action_Off(self, *sides):
         for el in sides:
             if el == LEFT:
                 self.Left = False
@@ -106,6 +112,9 @@ class Player(pygame.sprite.Sprite):
 
             if el == UP:
                 self.Up = False
+
+            if el == ATTACK:
+                self.Attack = False
 
     def update(self):
         if self.Right:
@@ -124,7 +133,7 @@ class Player(pygame.sprite.Sprite):
             self.Up = False
 
         if self.Up and self.can_jump:
-            self.speed_y = -8
+            self.speed_y = -7.6
             self.Up = False
             self.can_jump = False
 
@@ -132,10 +141,10 @@ class Player(pygame.sprite.Sprite):
             self.rect = self.rect.move(0, self.speed_y)
             if pygame.sprite.groupcollide(player_group, tiles_group, False, False, pygame.sprite.collide_mask):
                 self.rect = self.rect.move(0, -self.speed_y)
-                self.can_jump = True
+                if self.speed_y >= 0:
+                    self.can_jump = True
                 if self.speed_y < 0:
                     self.speed_y = 0
-
             self.speed_y += GRAVITY
             if self.speed_y > 5:
                 self.speed_y = 5
@@ -171,10 +180,8 @@ class Camera:
         self.dy = 0
 
     def apply(self, obj):
-        # print(obj)
         obj.rect.x += self.dx
         obj.rect.y += self.dy
-        # print(obj.rect)
 
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - width // 2)
@@ -194,6 +201,12 @@ def load_level(filname):
 
 def generate_level(level):
     new_player, x, y = None, None, None
+    for i in range(5):
+        back_sprit = pygame.sprite.Sprite(bakcground_group)
+        back_sprit.image = pygame.transform.scale(load_image(f'plx-{i}.png'), size)
+        back_sprit.rect = back_sprit.image.get_rect()
+        back_sprit.rect.x = 0
+        back_sprit.rect.y = 0
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '#':
@@ -225,7 +238,7 @@ while Is_game_on:
         elif event.type == pygame.KEYDOWN:
             index = [index for index, value in enumerate(
                 pygame.key.get_pressed()) if value == 1]
-            player.direct_on(*index)
+            player.action_on(*index)
 
         elif event.type == pygame.KEYUP:
             up_keys = []
@@ -235,14 +248,16 @@ while Is_game_on:
                 up_keys.append(LEFT)
             elif event.key == RIGHT:
                 up_keys.append(RIGHT)
-            player.direct_Off(*up_keys)
+            if event.key == ATTACK:
+                up_keys.append(ATTACK)
+            player.action_Off(*up_keys)
 
-    if Time_count >= 50:
+    if Time_count >= 60:
         Time_count = 0
         player.animation()
     player_group.update()
-    player_group.draw(Display)
-    tiles_group.draw(Display)
+    bakcground_group.draw(Display)
+    all_sprite.draw(Display)
     pygame.display.flip()
     camera.update(player)
     for el in all_sprite:
