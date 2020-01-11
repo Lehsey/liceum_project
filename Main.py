@@ -140,7 +140,7 @@ class Player(pygame.sprite.Sprite):
             self.Up = False
 
         if self.Up and self.can_jump:
-            self.speed_y = -7.6
+            self.speed_y = -6.2
             self.Up = False
             self.can_jump = False
 
@@ -269,7 +269,7 @@ while Is_game_on:
             if event.key == ATTACK:
                 up_keys.append(ATTACK)
             player.action_Off(*up_keys)
-
+    print(Time_count)
     if Time_count >= 60:
         Time_count = 0
         player.animation()
