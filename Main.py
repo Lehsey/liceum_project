@@ -133,8 +133,8 @@ class Player(pygame.sprite.Sprite):
             if self.Attack:
                 if (self.cur_sprite_attack >= 6 and self.cur_sprite_attack <= 8) or (self.cur_sprite_attack >= 1 and self.cur_sprite_attack <= 12) or (self.cur_sprite_attack >= 18 and self.cur_sprite_attack <= 19):
                     el.dead = True
-                elif el.cur_sprite_attack >= 8 and el.cur_sprite_attack <= 10 and el.Attack:
-                    self.DEAD = True
+            if el.cur_sprite_attack >= 8 and el.cur_sprite_attack <= 10 and el.Attack:
+                self.DEAD = True
 
         if self.Right:
             self.rect = self.rect.move(-(-self.speed_x // FPS), 0)
