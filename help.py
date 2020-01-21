@@ -1,5 +1,8 @@
 from PIL import Image
 
+import pygame.examples.eventlist
+pygame.examples.eventlist.main()
+
 def slicing(image_name, rows, column):
     imag = Image.open('data\\sprites\\' + image_name + '.png')
     orig_x, orig_y = imag.size
@@ -13,4 +16,4 @@ def slicing(image_name, rows, column):
             need_sprite.close()
     imag.close()
 
-slicing('player_run_l', 1, 8)
+#slicing('player_attack_r', 1, 22)
